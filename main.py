@@ -4,7 +4,7 @@ import sys
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("map", type=str, nargs="?", default="map.map")
+parser.add_argument('map', type=str, nargs='?', default='map.map')
 args = parser.parse_args()
 map_file = args.map
 
@@ -31,8 +31,8 @@ FPS = 50
 
 tile_images = {
     'wall': load_image('grass.png'),
-    'empty': load_image('empty.png')
-    #  'box': load_image('box.png')
+    'empty': load_image('empty.png'),
+    'place': load_image('place.png')
 }
 player_image = load_image('mar.png')
 box_image = load_image('box.png')
@@ -86,7 +86,7 @@ class Player(Sprite):
 
 class Box(Sprite):
     def __init__(self, pos_x, pos_y):
-        super().__init__(hero_group)
+        super().__init__(box_group)
         self.image = box_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x, tile_height * pos_y)
@@ -104,6 +104,7 @@ running = True
 clock = pygame.time.Clock()
 sprite_group = SpriteGroup()
 hero_group = SpriteGroup()
+box_group = SpriteGroup()
 
 
 def terminate():
@@ -112,16 +113,16 @@ def terminate():
 
 
 def start_screen():
-    intro_text = ["Перемещение героя 2", "",
-                  "",
-                  "С подгрузкой карты"]
+    intro_text = ['Sokoban', '',
+                  '',
+                  'С подгрузкой карты']
 
     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('black'))
+        string_rendered = font.render(line, True, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -141,7 +142,7 @@ def start_screen():
 
 
 def load_level(filename):
-    filename = "data/" + filename
+    filename = 'data/' + filename
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
     max_width = max(map(len, level_map))
@@ -157,39 +158,76 @@ def generate_level(level):
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
+            elif level[y][x] == 'P':
+                Tile('place', x, y)
             elif level[y][x] == 'B':
                 Tile('empty', x, y)
-                box_dict[x, y] = Box(x, y)
-                level[y][x] = "."
+                box_dict[Box(x, y)] = x, y
+                level[y][x] = '.'
             elif level[y][x] == '@':
                 Tile('empty', x, y)
                 new_player = Player(x, y)
-                level[y][x] = "."
+                level[y][x] = '.'
     print(box_dict)
     return new_player, box_dict, x, y
 
 
-def move(hero, box_dict, movement):
+def check_win(level_map, box_dict):
+    return all([level_map[y][x] == 'P' for x, y in box_dict.values()])
+
+
+def move(hero, movement):
     x, y = hero.pos
-    if movement == "up":
-        if y > 0 and level_map[y - 1][x] == ".":
+    free_tile = ['.', 'P']
+
+    if movement == 'up':
+        if y > 0 and level_map[y - 1][x] in free_tile and (x, y - 1) not in box_dict.values():
             hero.move(x, y - 1)
-    elif movement == "down":
-        if y < max_y - 1 and level_map[y + 1][x] == ".":
+        elif y > 0 and level_map[y - 1][x] in free_tile and (x, y - 1) in box_dict.values():
+            if level_map[y - 2][x] in free_tile and (x, y - 2) not in box_dict.values():
+                for box, pos in box_dict.items():
+                    if pos == (x, y - 1):
+                        box.move(x, y - 2)
+                        box_dict[box] = x, y - 2
+                        break
+                hero.move(x, y - 1)
+
+    elif movement == 'down':
+        if y < max_y - 1 and level_map[y + 1][x] in free_tile and (x, y + 1) not in box_dict.values():
             hero.move(x, y + 1)
-    elif movement == "left":
-        if x > 0 and level_map[y][x - 1] == ".":
+        elif y < max_y - 1 and level_map[y + 1][x] in free_tile and (x, y + 1) in box_dict.values():
+            if level_map[y + 2][x] in free_tile and (x, y + 2) not in box_dict.values():
+                for box, pos in box_dict.items():
+                    if pos == (x, y + 1):
+                        box.move(x, y + 2)
+                        box_dict[box] = x, y + 2
+                        break
+                hero.move(x, y + 1)
+
+    elif movement == 'left':
+        if x > 0 and level_map[y][x - 1] in free_tile and (x - 1, y) not in box_dict.values():
             hero.move(x - 1, y)
-    elif movement == "right":
-        if x < max_x - 1 and level_map[y][x + 1] == "." and not box_dict.get((x + 1, y), False):
+        elif x > 0 and level_map[y][x - 1] in free_tile and (x - 1, y) in box_dict.values():
+            if level_map[y][x - 2] in free_tile and (x - 2, y) not in box_dict.values():
+                for box, pos in box_dict.items():
+                    if pos == (x - 1, y):
+                        box.move(x - 2, y)
+                        box_dict[box] = x - 2, y
+                        break
+                hero.move(x - 1, y)
+
+    elif movement == 'right':
+        if x < max_x - 1 and level_map[y][x + 1] in free_tile and (x + 1, y) not in box_dict.values():
             hero.move(x + 1, y)
-        elif x < max_x - 1 and box_dict.get((x + 1, y), False):
-            if level_map[y][x + 2] == "." and not box_dict.get((x + 2, y), False):
-                box_dict[x + 1, y].move(x + 2, y)
-                del box_dict[x + 1, y]
-                box_dict[x + 2, y] = Box(x + 2, y)
+        elif x < max_x - 1 and (x + 1, y) and (x + 1, y) in box_dict.values():
+            if level_map[y][x + 2] in free_tile and (x + 2, y) not in box_dict.values():
+                for box, pos in box_dict.items():
+                    if pos == (x + 1, y):
+                        box.move(x + 2, y)
+                        box_dict[box] = x + 2, y
+                        break
                 hero.move(x + 1, y)
-                print(box_dict)
+
 
 start_screen()
 level_map = load_level(map_file)
@@ -200,15 +238,18 @@ while running:
             running = False
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_UP:
-                move(hero, box_dict, "up")
+                move(hero, 'up')
             elif event.key == pygame.K_DOWN:
-                move(hero, box_dict, "down")
+                move(hero, 'down')
             elif event.key == pygame.K_LEFT:
-                move(hero, box_dict, "left")
+                move(hero, 'left')
             elif event.key == pygame.K_RIGHT:
-                move(hero, box_dict, "right")
-    screen.fill(pygame.Color("black"))
+                move(hero, 'right')
+            if check_win(level_map, box_dict):
+                running = False
+    screen.fill(pygame.Color('black'))
     sprite_group.draw(screen)
+    box_group.draw(screen)
     hero_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
