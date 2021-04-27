@@ -2,6 +2,7 @@ import pygame
 import os
 import sys
 import argparse
+import pprint
 
 parser = argparse.ArgumentParser()
 parser.add_argument('map', type=str, nargs='?', default='map.map')
@@ -146,7 +147,7 @@ def load_level(filename):
     with open(filename, 'r') as mapFile:
         level_map = [line.strip() for line in mapFile]
     max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x.ljust(max_width, '.')), level_map))
+    return list(map(lambda x: list(x.ljust(max_width, '#')), level_map))
 
 
 def generate_level(level):
@@ -168,7 +169,7 @@ def generate_level(level):
                 Tile('empty', x, y)
                 new_player = Player(x, y)
                 level[y][x] = '.'
-    print(box_dict)
+    #  print(box_dict)
     return new_player, box_dict, x, y
 
 
@@ -231,6 +232,7 @@ def move(hero, movement):
 
 start_screen()
 level_map = load_level(map_file)
+pprint.pprint(level_map)
 hero, box_dict, max_x, max_y = generate_level(level_map)
 while running:
     for event in pygame.event.get():
