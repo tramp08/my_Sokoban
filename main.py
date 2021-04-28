@@ -2,7 +2,11 @@ import pygame
 import os
 import sys
 import argparse
+import pymorphy2 as pm
 
+
+morph = pm.MorphAnalyzer()
+step_word = morph.parse('ход')[0]
 
 parser = argparse.ArgumentParser()
 parser.add_argument('map', type=str, nargs='?', default='map.map')
@@ -114,37 +118,9 @@ def terminate():
     sys.exit
 
 
-# def start_screen():
-#     intro_text = ['Sokoban', 'Игроку необходимо расставить ящики по обозначенным местам лабиринта.',
-#                   'одновременно можно двигать только один ящик, толкая его вперёд.',
-#                   'r - сброс текущего уровня',
-#                   'n - следующий уровень']
-#
-#     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
-#     screen.blit(fon, (0, 0))
-#     font = pygame.font.Font(None, 30)
-#     text_coord = 50
-#     for line in intro_text:
-#         string_rendered = font.render(line, True, pygame.Color('black'))
-#         intro_rect = string_rendered.get_rect()
-#         text_coord += 10
-#         intro_rect.top = text_coord
-#         intro_rect.x = 10
-#         text_coord += intro_rect.height
-#         screen.blit(string_rendered, intro_rect)
-#
-#     while True:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 terminate()
-#             elif event.type == pygame.KEYDOWN or \
-#                     event.type == pygame.MOUSEBUTTONDOWN:
-#                 return
-#         pygame.display.flip()
-#         clock.tick(FPS)
-def show_screen(text):
+def show_screen(text, fon_file):
 
-    fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
+    fon = pygame.transform.scale(load_image(fon_file), screen_size)
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
@@ -279,14 +255,14 @@ intro_text = ['Sokoban', 'Игроку необходимо расставить
               'r - сброс текущего уровня',
               'n - следующий уровень']
 
-show_screen(intro_text)
+show_screen(intro_text, 'fon.jpg')
 levels = load_levels(map_file)
 for level in range(len(levels)):
     steps = 0
     level_map = load_level(levels[level])
     hero, box_dict, max_x, max_y = generate_level(level_map)
     win = False
-    pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
+    pygame.display.set_caption(f'Sokoban уровень {level + 1},  {steps} {step_word.make_agree_with_number(steps).word}')
     while running and not win:
 
         for event in pygame.event.get():
@@ -309,16 +285,17 @@ for level in range(len(levels)):
                     hero, box_dict, max_x, max_y = generate_level(load_level(levels[level]))
                 elif event.key == pygame.K_n:
                     win = True
+                pm_steps = f'{steps} {step_word.make_agree_with_number(steps).word}'
                 if check_win(level_map, box_dict):
                     win_text = [
                         'Ура !',
-                        f'Уровень {level + 1} пройден за {steps} шагов !',
+                        f'Уровень {level + 1} пройден за {pm_steps}!',
                         'для продолжения нажмите любую клавишу',
                     ]
-                    pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
-                    show_screen(win_text)
+                    pygame.display.set_caption(f'Sokoban уровень {level + 1}, {pm_steps}')
+                    show_screen(win_text, 'fon.jpg')
                     win = True
-                pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
+                pygame.display.set_caption(f'Sokoban уровень {level + 1}, {pm_steps}')
 
         screen.fill(pygame.Color('black'))
         sprite_group.draw(screen)
