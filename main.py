@@ -30,6 +30,7 @@ screen_size = (800, 700)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
 
+
 tile_images = {
     'wall': load_image('grass.png'),
     'empty': load_image('empty.png'),
@@ -113,16 +114,41 @@ def terminate():
     sys.exit
 
 
-def start_screen():
-    intro_text = ['Sokoban', '',
-                  'r - сброс текущего уровня',
-                  'n - следующий уровень']
+# def start_screen():
+#     intro_text = ['Sokoban', 'Игроку необходимо расставить ящики по обозначенным местам лабиринта.',
+#                   'одновременно можно двигать только один ящик, толкая его вперёд.',
+#                   'r - сброс текущего уровня',
+#                   'n - следующий уровень']
+#
+#     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
+#     screen.blit(fon, (0, 0))
+#     font = pygame.font.Font(None, 30)
+#     text_coord = 50
+#     for line in intro_text:
+#         string_rendered = font.render(line, True, pygame.Color('black'))
+#         intro_rect = string_rendered.get_rect()
+#         text_coord += 10
+#         intro_rect.top = text_coord
+#         intro_rect.x = 10
+#         text_coord += intro_rect.height
+#         screen.blit(string_rendered, intro_rect)
+#
+#     while True:
+#         for event in pygame.event.get():
+#             if event.type == pygame.QUIT:
+#                 terminate()
+#             elif event.type == pygame.KEYDOWN or \
+#                     event.type == pygame.MOUSEBUTTONDOWN:
+#                 return
+#         pygame.display.flip()
+#         clock.tick(FPS)
+def show_screen(text):
 
     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
     screen.blit(fon, (0, 0))
     font = pygame.font.Font(None, 30)
     text_coord = 50
-    for line in intro_text:
+    for line in text:
         string_rendered = font.render(line, True, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
@@ -142,12 +168,6 @@ def start_screen():
         clock.tick(FPS)
 
 
-# def load_level(filename):
-#     filename = 'data/' + filename
-#     with open(filename, 'r') as mapFile:
-#         level_map = [line.strip() for line in mapFile]
-#     max_width = max(map(len, level_map))
-#     return list(map(lambda x: list(x.ljust(max_width, '#')), level_map))
 def load_level(level_map):
     max_width = max(map(len, level_map))
     return list(map(lambda x: list(x.ljust(max_width, '#')), level_map))
@@ -254,12 +274,19 @@ def move(hero, movement):
                 hero.move(x + 1, y)
 
 
-start_screen()
+intro_text = ['Sokoban', 'Игроку необходимо расставить ящики по обозначенным местам лабиринта.',
+              'одновременно можно двигать только один ящик, толкая его вперёд.',
+              'r - сброс текущего уровня',
+              'n - следующий уровень']
+
+show_screen(intro_text)
 levels = load_levels(map_file)
 for level in range(len(levels)):
+    steps = 0
     level_map = load_level(levels[level])
     hero, box_dict, max_x, max_y = generate_level(level_map)
     win = False
+    pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
     while running and not win:
 
         for event in pygame.event.get():
@@ -268,18 +295,30 @@ for level in range(len(levels)):
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     move(hero, 'up')
+                    steps += 1
                 elif event.key == pygame.K_DOWN:
                     move(hero, 'down')
+                    steps += 1
                 elif event.key == pygame.K_LEFT:
                     move(hero, 'left')
+                    steps += 1
                 elif event.key == pygame.K_RIGHT:
                     move(hero, 'right')
+                    steps += 1
                 elif event.key == pygame.K_r:
                     hero, box_dict, max_x, max_y = generate_level(load_level(levels[level]))
                 elif event.key == pygame.K_n:
                     win = True
                 if check_win(level_map, box_dict):
+                    win_text = [
+                        'Ура !',
+                        f'Уровень {level + 1} пройден за {steps} шагов !',
+                        'для продолжения нажмите любую клавишу',
+                    ]
+                    pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
+                    show_screen(win_text)
                     win = True
+                pygame.display.set_caption(f'Sokoban уровень {level + 1}, шагов {steps}')
 
         screen.fill(pygame.Color('black'))
         sprite_group.draw(screen)
