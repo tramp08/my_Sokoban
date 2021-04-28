@@ -2,7 +2,7 @@ import pygame
 import os
 import sys
 import argparse
-import pprint
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('map', type=str, nargs='?', default='map.map')
@@ -26,7 +26,7 @@ def load_image(name, color_key=None):
 
 
 pygame.init()
-screen_size = (550, 550)
+screen_size = (800, 700)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
 
@@ -115,8 +115,8 @@ def terminate():
 
 def start_screen():
     intro_text = ['Sokoban', '',
-                  '',
-                  'С подгрузкой карты']
+                  'r - сброс текущего уровня',
+                  'n - следующий уровень']
 
     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
     screen.blit(fon, (0, 0))
@@ -142,16 +142,40 @@ def start_screen():
         clock.tick(FPS)
 
 
-def load_level(filename):
-    filename = 'data/' + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
+# def load_level(filename):
+#     filename = 'data/' + filename
+#     with open(filename, 'r') as mapFile:
+#         level_map = [line.strip() for line in mapFile]
+#     max_width = max(map(len, level_map))
+#     return list(map(lambda x: list(x.ljust(max_width, '#')), level_map))
+def load_level(level_map):
     max_width = max(map(len, level_map))
     return list(map(lambda x: list(x.ljust(max_width, '#')), level_map))
 
 
+def load_levels(filename):
+    filename = 'data/' + filename
+    with open(filename, 'r') as mapFile:
+        lines = [line.strip() for line in mapFile]
+    levels = []
+    level = []
+    #  pprint(lines)
+    for i in range(len(lines)):
+        #  pprint(lines[i])
+        if lines[i].strip() != '':
+            level += [lines[i]]
+        else:
+            #  pprint(level)
+            levels += [level]
+            level = []
+    return levels
+
+
 def generate_level(level):
     new_player, x, y = None, None, None
+    sprite_group.empty()
+    box_group.empty()
+    hero_group.empty()
     box_dict = {}
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -231,28 +255,37 @@ def move(hero, movement):
 
 
 start_screen()
-level_map = load_level(map_file)
-pprint.pprint(level_map)
-hero, box_dict, max_x, max_y = generate_level(level_map)
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                move(hero, 'up')
-            elif event.key == pygame.K_DOWN:
-                move(hero, 'down')
-            elif event.key == pygame.K_LEFT:
-                move(hero, 'left')
-            elif event.key == pygame.K_RIGHT:
-                move(hero, 'right')
-            if check_win(level_map, box_dict):
+levels = load_levels(map_file)
+for level in range(len(levels)):
+    level_map = load_level(levels[level])
+    hero, box_dict, max_x, max_y = generate_level(level_map)
+    win = False
+    while running and not win:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
                 running = False
-    screen.fill(pygame.Color('black'))
-    sprite_group.draw(screen)
-    box_group.draw(screen)
-    hero_group.draw(screen)
-    clock.tick(FPS)
-    pygame.display.flip()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    move(hero, 'up')
+                elif event.key == pygame.K_DOWN:
+                    move(hero, 'down')
+                elif event.key == pygame.K_LEFT:
+                    move(hero, 'left')
+                elif event.key == pygame.K_RIGHT:
+                    move(hero, 'right')
+                elif event.key == pygame.K_r:
+                    hero, box_dict, max_x, max_y = generate_level(load_level(levels[level]))
+                elif event.key == pygame.K_n:
+                    win = True
+                if check_win(level_map, box_dict):
+                    win = True
+
+        screen.fill(pygame.Color('black'))
+        sprite_group.draw(screen)
+        box_group.draw(screen)
+        hero_group.draw(screen)
+        clock.tick(FPS)
+        pygame.display.flip()
+
 pygame.quit()
