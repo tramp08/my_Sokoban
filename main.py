@@ -115,7 +115,7 @@ def terminate():
 def start_screen():
     intro_text = ['Sokoban', '',
                   '',
-                  'С подгрузкой карты']
+                  '']
 
     fon = pygame.transform.scale(load_image('fon.jpg'), screen_size)
     screen.blit(fon, (0, 0))
