@@ -3,6 +3,7 @@ import os
 import sys
 import argparse
 import pymorphy2 as pm
+import sqlite3
 
 
 morph = pm.MorphAnalyzer()
@@ -30,6 +31,13 @@ def load_image(name, color_key=None):
 
 
 pygame.init()
+pygame.mixer.init()
+sound_step = pygame.mixer.Sound('sound/step.wav')
+sound_push = pygame.mixer.Sound('sound/push1.wav')
+sound_hand_clap = pygame.mixer.Sound('sound/hand_clap.wav')
+con = sqlite3.connect("db/results.sqlite")
+cur = con.cursor()
+players = cur.execute('SELECT * FROM results').fetchall()
 screen_size = (800, 700)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
@@ -204,48 +212,56 @@ def move(hero, movement):
     if movement == 'up':
         if y > 0 and level_map[y - 1][x] in free_tile and (x, y - 1) not in box_dict.values():
             hero.move(x, y - 1)
+            sound_step.play()
         elif y > 0 and level_map[y - 1][x] in free_tile and (x, y - 1) in box_dict.values():
             if level_map[y - 2][x] in free_tile and (x, y - 2) not in box_dict.values():
                 for box, pos in box_dict.items():
                     if pos == (x, y - 1):
                         box.move(x, y - 2)
                         box_dict[box] = x, y - 2
+                        sound_push.play()
                         break
                 hero.move(x, y - 1)
 
     elif movement == 'down':
         if y < max_y - 1 and level_map[y + 1][x] in free_tile and (x, y + 1) not in box_dict.values():
             hero.move(x, y + 1)
+            sound_step.play()
         elif y < max_y - 1 and level_map[y + 1][x] in free_tile and (x, y + 1) in box_dict.values():
             if level_map[y + 2][x] in free_tile and (x, y + 2) not in box_dict.values():
                 for box, pos in box_dict.items():
                     if pos == (x, y + 1):
                         box.move(x, y + 2)
                         box_dict[box] = x, y + 2
+                        sound_push.play()
                         break
                 hero.move(x, y + 1)
 
     elif movement == 'left':
         if x > 0 and level_map[y][x - 1] in free_tile and (x - 1, y) not in box_dict.values():
             hero.move(x - 1, y)
+            sound_step.play()
         elif x > 0 and level_map[y][x - 1] in free_tile and (x - 1, y) in box_dict.values():
             if level_map[y][x - 2] in free_tile and (x - 2, y) not in box_dict.values():
                 for box, pos in box_dict.items():
                     if pos == (x - 1, y):
                         box.move(x - 2, y)
                         box_dict[box] = x - 2, y
+                        sound_push.play()
                         break
                 hero.move(x - 1, y)
 
     elif movement == 'right':
         if x < max_x - 1 and level_map[y][x + 1] in free_tile and (x + 1, y) not in box_dict.values():
             hero.move(x + 1, y)
+            sound_step.play()
         elif x < max_x - 1 and (x + 1, y) and (x + 1, y) in box_dict.values():
             if level_map[y][x + 2] in free_tile and (x + 2, y) not in box_dict.values():
                 for box, pos in box_dict.items():
                     if pos == (x + 1, y):
                         box.move(x + 2, y)
                         box_dict[box] = x + 2, y
+                        sound_push.play()
                         break
                 hero.move(x + 1, y)
 
@@ -258,6 +274,7 @@ intro_text = ['Sokoban', 'Игроку необходимо расставить
 show_screen(intro_text, 'fon.jpg')
 levels = load_levels(map_file)
 for level in range(len(levels)):
+    sound_hand_clap.stop()
     steps = 0
     level_map = load_level(levels[level])
     hero, box_dict, max_x, max_y = generate_level(level_map)
@@ -287,6 +304,7 @@ for level in range(len(levels)):
                     win = True
                 pm_steps = f'{steps} {step_word.make_agree_with_number(steps).word}'
                 if check_win(level_map, box_dict):
+                    sound_hand_clap.play()
                     win_text = [
                         'Ура !',
                         f'Уровень {level + 1} пройден за {pm_steps}!',
@@ -304,4 +322,5 @@ for level in range(len(levels)):
         clock.tick(FPS)
         pygame.display.flip()
 
+con.close()
 pygame.quit()
