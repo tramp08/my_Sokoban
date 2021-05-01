@@ -3,7 +3,6 @@ import os
 import sys
 import argparse
 import pymorphy2 as pm
-import sqlite3
 
 
 morph = pm.MorphAnalyzer()
@@ -35,9 +34,6 @@ pygame.mixer.init()
 sound_step = pygame.mixer.Sound('sound/step.wav')
 sound_push = pygame.mixer.Sound('sound/push1.wav')
 sound_hand_clap = pygame.mixer.Sound('sound/hand_clap.wav')
-con = sqlite3.connect("db/results.sqlite")
-cur = con.cursor()
-players = cur.execute('SELECT * FROM results').fetchall()
 screen_size = (800, 700)
 screen = pygame.display.set_mode(screen_size)
 FPS = 50
@@ -322,5 +318,4 @@ for level in range(len(levels)):
         clock.tick(FPS)
         pygame.display.flip()
 
-con.close()
 pygame.quit()
